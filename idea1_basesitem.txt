@@ -1,0 +1,186 @@
+# -*- coding: utf-8 -*-
+"""
+Sistema de Gestión para 'Software FJ'
+Autor: JHON
+Requisitos: Python 3.10+
+"""
+
+from abc import ABC, abstractmethod
+import re
+import logging
+from typing import List
+
+# =========================
+# Configuración de Logs
+# =========================
+logging.basicConfig(
+    filename="software_fj.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# =========================
+# Excepciones Personalizadas
+# =========================
+class SoftwareFJError(Exception):
+    """Excepción base para el sistema."""
+    pass
+
+class ClienteError(SoftwareFJError):
+    """Errores relacionados con Cliente."""
+    pass
+
+class ServicioError(SoftwareFJError):
+    """Errores relacionados con Servicios."""
+    pass
+
+# =========================
+# Clases Abstractas
+# =========================
+class EntidadSistema(ABC):
+    """Clase base para todas las entidades del sistema."""
+    pass
+
+class Servicio(EntidadSistema):
+    """Clase abstracta para servicios ofrecidos."""
+    
+    @abstractmethod
+    def calcular_costo(self) -> float:
+        pass
+    
+    @abstractmethod
+    def detallar(self) -> str:
+        pass
+
+# =========================
+# Clase Cliente con Encapsulamiento
+# =========================
+class Cliente(EntidadSistema):
+    def __init__(self, id_cliente: int, nombre: str, email: str) -> None:
+        self.__set_id(id_cliente)
+        self.__set_nombre(nombre)
+        self.__set_email(email)
+
+    def __set_id(self, id_cliente: int) -> None:
+        if not isinstance(id_cliente, int):
+            raise ClienteError("El ID debe ser numérico.")
+        self.__id_cliente = id_cliente
+
+    def __set_nombre(self, nombre: str) -> None:
+        if not nombre.strip():
+            raise ClienteError("El nombre no puede estar vacío.")
+        self.__nombre = nombre
+
+    def __set_email(self, email: str) -> None:
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ClienteError("Formato de email inválido.")
+        self.__email = email
+
+    def get_info(self) -> str:
+        return f"Cliente {self.__id_cliente}: {self.__nombre} ({self.__email})"
+
+# =========================
+# Servicios Concretos
+# =========================
+class ReservaSala(Servicio):
+    def __init__(self, horas: int, tarifa_hora: float) -> None:
+        self.horas = horas
+        self.tarifa_hora = tarifa_hora
+
+    def calcular_costo(self) -> float:
+        return self.horas * self.tarifa_hora * 1.19  # IVA 19%
+
+    def detallar(self) -> str:
+        return f"Reserva de sala por {self.horas} horas. Tarifa: {self.tarifa_hora}/h"
+
+class AlquilerEquipo(Servicio):
+    def __init__(self, dias: int, tarifa_dia: float, seguro: float = 0.0) -> None:
+        self.dias = dias
+        self.tarifa_dia = tarifa_dia
+        self.seguro = seguro
+
+    def calcular_costo(self) -> float:
+        return (self.dias * self.tarifa_dia) + self.seguro
+
+    def detallar(self) -> str:
+        return f"Alquiler de equipo por {self.dias} días. Tarifa: {self.tarifa_dia}/día + Seguro: {self.seguro}"
+
+class AsesoriaEspecializada(Servicio):
+    def __init__(self, horas: int, tarifa_hora: float, descuento: float = 0.0) -> None:
+        self.horas = horas
+        self.tarifa_hora = tarifa_hora
+        self.descuento = descuento
+
+    def calcular_costo(self) -> float:
+        costo = self.horas * self.tarifa_hora
+        return costo - (costo * self.descuento)
+
+    def detallar(self) -> str:
+        return f"Asesoría especializada por {self.horas} horas. Tarifa: {self.tarifa_hora}/h con descuento {self.descuento*100}%"
+
+# =========================
+# Sistema Principal
+# =========================
+class SistemaGestion:
+    def __init__(self) -> None:
+        self.clientes: List[Cliente] = []
+        self.servicios: List[Servicio] = []
+
+    def registrar_cliente(self, cliente: Cliente) -> None:
+        self.clientes.append(cliente)
+        logging.info(f"Cliente registrado: {cliente.get_info()}")
+
+    def agregar_servicio(self, servicio: Servicio) -> None:
+        self.servicios.append(servicio)
+        logging.info(f"Servicio agregado: {servicio.detallar()}")
+
+    def procesar_servicio(self, servicio: Servicio) -> None:
+        try:
+            costo = servicio.calcular_costo()
+        except Exception as e:
+            logging.error(f"Error al calcular costo: {e}")
+            raise ServicioError("Error en el cálculo del servicio.") from e
+        else:
+            logging.info(f"Servicio procesado correctamente. Costo: {costo}")
+            print(f"✅ {servicio.detallar()} | Costo: {costo}")
+        finally:
+            print("Operación finalizada.\n")
+
+# =========================
+# Simulación
+# =========================
+def main() -> None:
+    sistema = SistemaGestion()
+
+    # 5 Operaciones válidas
+    try:
+        cliente1 = Cliente(1, "Ana Pérez", "ana@correo.com")
+        sistema.registrar_cliente(cliente1)
+        sistema.procesar_servicio(ReservaSala(3, 50))
+        sistema.procesar_servicio(AlquilerEquipo(2, 100, seguro=20))
+        sistema.procesar_servicio(AsesoriaEspecializada(5, 80, descuento=0.1))
+        sistema.procesar_servicio(ReservaSala(1, 200))
+    except SoftwareFJError as e:
+        print(f"❌ Error: {e}")
+
+    # 5 Operaciones erróneas
+    errores = [
+        lambda: Cliente("X", "Juan", "juan@correo.com"),  # ID inválido
+        lambda: Cliente(2, "", "maria@correo.com"),       # Nombre vacío
+        lambda: Cliente(3, "Pedro", "correo_invalido"),   # Email inválido
+        lambda: sistema.procesar_servicio(AlquilerEquipo("tres", 100)),  # Tipo inválido
+        lambda: sistema.procesar_servicio("ServicioNoValido")            # Objeto incorrecto
+    ]
+
+    for op in errores:
+        try:
+            op()
+        except SoftwareFJError as e:
+            print(f"❌ Error controlado: {e}")
+        except Exception as e:
+            print(f"❌ Error inesperado: {e}")
+        finally:
+            print("Operación finalizada con error.\n")
+
+if __name__ == "__main__":
+    main()
