@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-# Importamos desde tus otros archivos
+#modls
 from sistema import SistemaGestion
 from cliente import Cliente
 from reserva import ReservaSala
