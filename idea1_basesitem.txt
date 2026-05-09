@@ -142,7 +142,7 @@ class SistemaGestion:
             raise ServicioError("Error en el cálculo del servicio.") from e
         else:
             logging.info(f"Servicio procesado correctamente. Costo: {costo}")
-            print(f"✅ {servicio.detallar()} | Costo: {costo}")
+            print(f" {servicio.detallar()} | Costo: {costo}")
         finally:
             print("Operación finalizada.\n")
 
@@ -161,7 +161,7 @@ def main() -> None:
         sistema.procesar_servicio(AsesoriaEspecializada(5, 80, descuento=0.1))
         sistema.procesar_servicio(ReservaSala(1, 200))
     except SoftwareFJError as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
 
     # 5 Operaciones erróneas
     errores = [
@@ -176,9 +176,9 @@ def main() -> None:
         try:
             op()
         except SoftwareFJError as e:
-            print(f"❌ Error controlado: {e}")
+            print(f" Error controlado: {e}")
         except Exception as e:
-            print(f"❌ Error inesperado: {e}")
+            print(f"Error inesperado: {e}")
         finally:
             print("Operación finalizada con error.\n")
 
